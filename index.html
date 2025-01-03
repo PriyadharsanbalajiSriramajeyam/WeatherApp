@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sun Doodle -->
+        <div class="sun-doodle">
+            <div class="sun">
+                <div class="rays"></div>
+            </div>
+        </div>
+
+        <!-- Moon Doodle -->
+        <div class="moon-doodle">
+            <div class="moon">
+                <div class="crater"></div>
+            </div>
+        </div>
+
+        <!-- Rain Container -->
+        <div class="rain-container"></div>
+
+        <!-- Pebbles -->
+        <div class="pebbles">
+            <div class="pebble"></div>
+            <div class="pebble"></div>
+            <div class="pebble"></div>
+            <div class="pebble"></div>
+        </div>
+
+        <!-- Search Form -->
+        <form class="search-form" id="searchForm">
+            <input type="text" placeholder="Enter city name..." class="search-input" id="cityInput">
+            <button type="submit" class="search-button">Search</button>
+        </form>
+
+        <!-- Weather Card -->
+        <div class="weather-card" id="weatherCard" style="display: none;">
+            <h1 class="city" id="cityName"></h1>
+            <p class="description" id="weatherDescription"></p>
+            <div class="temperature" id="temperature"></div>
+            <div class="weather-details">
+                <div class="detail">
+                    <i class="wind-icon"></i>
+                    <p id="windSpeed"></p>
+                    <span>Wind</span>
+                </div>
+                <div class="detail">
+                    <i class="humidity-icon"></i>
+                    <p id="humidity"></p>
+                    <span>Humidity</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = '64d33488611566b7f2f4ead60966b942'; // Your OpenWeather API key
+        const searchForm = document.getElementById('searchForm');
+        const cityInput = document.getElementById('cityInput');
+        const weatherCard = document.getElementById('weatherCard');
+
+        // Convert Kelvin to Celsius
+        function kelvinToCelsius(kelvin) {
+            return (kelvin - 273.15).toFixed(1);
+        }
+
+        // Update UI with weather data
+        function updateWeatherUI(data) {
+            document.getElementById('cityName').textContent = data.name;
+            document.getElementById('weatherDescription').textContent = data.weather[0].description;
+            document.getElementById('temperature').textContent = `${kelvinToCelsius(data.main.temp)}°C`;
+            document.getElementById('windSpeed').textContent = `${data.wind.speed} m/s`;
+            document.getElementById('humidity').textContent = `${data.main.humidity}%`;
+            weatherCard.style.display = 'block';
+        }
+
+        // Handle form submission
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const city = cityInput.value.trim();
+
+            if (!city) return;
+
+            try {
+                const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}`);
+                if (!response.ok) {
+                    throw new Error('City not found');
+                }
+                const data = await response.json();
+                updateWeatherUI(data);
+
+                // Generate rain drops based on weather
+                if (data.weather[0].main.toLowerCase().includes('rain')) {
+                    generateRain();
+                } else {
+                    stopRain();
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        // Rain effect
+        function generateRain() {
+            const rainContainer = document.querySelector('.rain-container');
+            rainContainer.innerHTML = '';
+            for (let i = 0; i < 50; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'rain-drop';
+                drop.style.left = `${Math.random() * 100}%`;
+                drop.style.animationDelay = `${Math.random() * 2}s`;
+                rainContainer.appendChild(drop);
+            }
+        }
+
+        function stopRain() {
+            const rainContainer = document.querySelector('.rain-container');
+            rainContainer.innerHTML = '';
+        }
+
+        // Make pebbles draggable
+        const pebbles = document.querySelectorAll('.pebble');
+        pebbles.forEach(pebble => {
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+
+            pebble.addEventListener('mousedown', dragStart);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', dragEnd);
+
+            function dragStart(e) {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+
+                if (e.target === pebble) {
+                    isDragging = true;
+                }
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    pebble.style.transform = `translate(${currentX}px, ${currentY}px)`;
+                }
+            }
+
+            function dragEnd() {
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+            }
+        });
+    </script>
+</body>
+</html>
